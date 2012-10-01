@@ -1,0 +1,8 @@
+KingnetPayRoute.lo: /Users/robbin/Documents/www/php-5.3.5/ext/KingnetPayRoute/KingnetPayRoute.c
+	$(LIBTOOL) --mode=compile $(CC)  -I. -I/Users/robbin/Documents/www/php-5.3.5/ext/KingnetPayRoute $(COMMON_FLAGS) $(CFLAGS_CLEAN) $(EXTRA_CFLAGS)  -c /Users/robbin/Documents/www/php-5.3.5/ext/KingnetPayRoute/KingnetPayRoute.c -o KingnetPayRoute.lo 
+$(phplibdir)/KingnetPayRoute.la: ./KingnetPayRoute.la
+	$(LIBTOOL) --mode=install cp ./KingnetPayRoute.la $(phplibdir)
+
+./KingnetPayRoute.la: $(shared_objects_KingnetPayRoute) $(KINGNETPAYROUTE_SHARED_DEPENDENCIES)
+	$(LIBTOOL) --mode=link $(CC) $(COMMON_FLAGS) $(CFLAGS_CLEAN) $(EXTRA_CFLAGS) $(LDFLAGS) -o $@ -export-dynamic -avoid-version -prefer-pic -module -rpath $(phplibdir) $(EXTRA_LDFLAGS) $(shared_objects_KingnetPayRoute) $(KINGNETPAYROUTE_SHARED_LIBADD)
+
