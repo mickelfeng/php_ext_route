@@ -46,6 +46,8 @@ PHP_FUNCTION(confirm_KingnetPayRoute_compiled);	/* For testing, remove later. */
 PHP_METHOD(KingnetPayRoute,__construct);
 PHP_METHOD(KingnetPayRoute,__destruct);
 PHP_METHOD(KingnetPayRoute,getRoute);
+PHP_METHOD(KingnetPayRoute,addRoute);
+PHP_METHOD(KingnetPayRoute,getRouteMap);
 
 /*
   	Declare any global variables you may need between the BEGIN
