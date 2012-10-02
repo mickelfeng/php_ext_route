@@ -18,65 +18,8 @@
 
 /* $Id: header 297205 2010-03-30 21:09:07Z johannes $ */
 
-#ifdef HAVE_CONFIG_H
-#include "config.h"
-#endif
-
-#include "php.h"
-#include "php_ini.h"
-#include "ext/standard/info.h"
 #include "php_KingnetPayRoute.h"
 
-/* If you declare any globals in php_KingnetPayRoute.h uncomment this:
-ZEND_DECLARE_MODULE_GLOBALS(KingnetPayRoute)
-*/
-
-/* True global resources - no need for thread safety here */
-static int le_KingnetPayRoute;
- /* 类方法的参数 */
-ZEND_BEGIN_ARG_INFO(routeName_args, 0)
-	ZEND_ARG_INFO(0, name)
-ZEND_END_ARG_INFO()
-/* {{{ KingnetPayRoute_functions[]
- *
- * Every user visible function must have an entry in KingnetPayRoute_functions[].
- */
-const zend_function_entry KingnetPayRoute_functions[] = {
-	{NULL, NULL, NULL}	/* Must be the last line in KingnetPayRoute_functions[] */
-};
-const zend_function_entry route_functions[] = {
-	PHP_ME(KingnetPayRoute, __construct, NULL, ZEND_ACC_PUBLIC|ZEND_ACC_CTOR)
-	PHP_ME(KingnetPayRoute, __destruct,  NULL, ZEND_ACC_PUBLIC|ZEND_ACC_DTOR)
-	PHP_ME(KingnetPayRoute, getRoute,  routeName_args, ZEND_ACC_PUBLIC)// get route info
-	PHP_ME(KingnetPayRoute, addRoute,  routeName_args, ZEND_ACC_PUBLIC)// add route info
-	PHP_ME(KingnetPayRoute, getRouteMap,  NULL, ZEND_ACC_PUBLIC)// get route map = get all route info
-	{NULL, NULL, NULL}	/* Must be the last line in KingnetPayRoute_functions[] */
-};
-/* }}} */
-
-/* {{{ KingnetPayRoute_module_entry
- */
-zend_module_entry KingnetPayRoute_module_entry = {
-#if ZEND_MODULE_API_NO >= 20010901
-	STANDARD_MODULE_HEADER,
-#endif
-	"KingnetPayRoute",
-	KingnetPayRoute_functions,
-	PHP_MINIT(KingnetPayRoute),
-	PHP_MSHUTDOWN(KingnetPayRoute),
-	PHP_RINIT(KingnetPayRoute),		/* Replace with NULL if there's nothing to do at request start */
-	PHP_RSHUTDOWN(KingnetPayRoute),	/* Replace with NULL if there's nothing to do at request end */
-	PHP_MINFO(KingnetPayRoute),
-#if ZEND_MODULE_API_NO >= 20010901
-	"0.1", /* Replace with version number for your extension */
-#endif
-	STANDARD_MODULE_PROPERTIES
-};
-/* }}} */
-
-#ifdef COMPILE_DL_KINGNETPAYROUTE
-ZEND_GET_MODULE(KingnetPayRoute)
-#endif
 
 /* {{{ PHP_INI
  */
@@ -178,73 +121,54 @@ PHP_METHOD(KingnetPayRoute,__construct) {
 PHP_METHOD(KingnetPayRoute,__destruct) {
 }
 PHP_METHOD(KingnetPayRoute,getRoute) {
-	char *route_info;
-	zval *self,*route_map,**pdata,*name;
-	if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "z", &name) == FAILURE) {
+	char *name;
+	uint name_len;
+	zval *route_map,**pdata;
+	if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "s", &name,&name_len) == FAILURE) {
 		RETURN_NULL();
 	}
 
-	self = getThis();
-	route_map = zend_read_property(Z_OBJCE_P(self), self, ZEND_STRL("route_map"), 0 TSRMLS_CC);
-	if (zend_hash_find(Z_ARRVAL_P(route_map),Z_STRVAL_P(name),Z_STRLEN_P(name)+1,(void **)&pdata) != FAILURE) {
-		route_info = Z_STRVAL_PP(pdata);
-		RETURN_STRING(route_info,1);
-	} else {
-		RETURN_ZVAL(route_map,1,0);
+	if (!name_len) {
+		RETURN_FALSE;
 	}
-	RETURN_TRUE;
+
+	route_map = zend_read_property(KingnetPayRoute_ce, getThis(), ZEND_STRL("route_map"), 1 TSRMLS_CC);
+
+	if (zend_hash_find(Z_ARRVAL_P(route_map),name,name_len+1,(void **)&pdata) == SUCCESS) {
+		RETURN_ZVAL(*pdata,1,0);
+	}
+
+	RETURN_NULL();
 }
 PHP_METHOD(KingnetPayRoute,addRoute) {
-	zval *self,*route_info,*route_map;
-	int count,i;
-	if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "a", &route_info) == FAILURE) {
+
+	char *name;
+	uint name_len;
+	zval *route_map,*info;
+
+	if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "sz", &name, &name_len, &info) == FAILURE) {
 		RETURN_NULL();
 	}
-	// 获取数组大小
-	count = zend_hash_num_elements(Z_ARRVAL_P(route_info));
-    // 将数组的内部指针指向第一个单元
-	zend_hash_internal_pointer_reset(Z_ARRVAL_P(route_info));
 
-	self = getThis();
-	route_map = zend_read_property(Z_OBJCE_P(self), self, ZEND_STRL("route_map"), 0 TSRMLS_CC);
-
-	/*zend_hash_merge(Z_ARRVAL_P(route_map),Z_ARRVAL_P(route_info),zval_add_ref,NULL,sizeof(zval*),1);*/
-	for (i = 0; i < count; i ++) {
-		char *key;
-		uint key_len;
-		ulong idx;
-		zval **pdata,*varcopy;
-		// 获取当前数据
-		zend_hash_get_current_data(Z_ARRVAL_P(route_info), (void**)&pdata);
-
-		/* 否则，复制一份zval*的值 */
-		MAKE_STD_ZVAL(varcopy);
-		varcopy = *pdata;
-		/* Duplicate any allocated structures within the zval* */
-		zval_copy_ctor(varcopy);
-
-		if (zend_hash_get_current_key(Z_ARRVAL_P(route_info), &key, &idx, 0) == HASH_KEY_IS_STRING) {
-			// KEY为字符串
-			if (zend_hash_add(Z_ARRVAL_P(route_map),key,strlen(key)+1,&varcopy,sizeof(zval*),NULL) == SUCCESS) {
-				/*php_printf("ok");*/
-			}
-		} else {
-			// KEY为数字
-			php_printf("array[%ld] = %s|%s\n", idx, Z_STRVAL_PP(pdata),key);
-			if (zend_hash_index_update(Z_ARRVAL_P(route_map),idx,&varcopy,sizeof(zval*),NULL) == SUCCESS) {
-				/*php_printf("ok num");*/
-			}
-		}
-		// 将数组中的内部指针向前移动一位
-		zend_hash_move_forward(Z_ARRVAL_P(route_info));
+	if (!name_len) {
+		RETURN_FALSE;
 	}
-	zend_update_property(Z_OBJCE_P(self), self, ZEND_STRL("route_map"), route_map TSRMLS_CC);
-	RETURN_ZVAL(route_map,1,0);
+
+	// 1 is no notice messages
+	route_map = zend_read_property(KingnetPayRoute_ce, getThis(), ZEND_STRL("route_map"), 1 TSRMLS_CC);
+
+	// I dont know why add this line
+	Z_ADDREF_P(info);
+	zend_hash_update(Z_ARRVAL_P(route_map), name, name_len + 1, (void **)&info, sizeof(zval *), NULL);
+
+	RETURN_ZVAL(getThis(), 1, 0);
 }
+
 PHP_METHOD(KingnetPayRoute,getRouteMap) {
-	zval *self,*route_map;
-	self = getThis();
-	route_map = zend_read_property(Z_OBJCE_P(self), self, ZEND_STRL("route_map"), 0 TSRMLS_CC);
+	zval *route_map;
+
+	route_map = zend_read_property(KingnetPayRoute_ce, getThis(), ZEND_STRL("route_map"), 1 TSRMLS_CC);
+
 	RETURN_ZVAL(route_map,1,0);
 }
 /*

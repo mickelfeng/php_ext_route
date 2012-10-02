@@ -17,6 +17,13 @@
 */
 
 /* $Id: header 297205 2010-03-30 21:09:07Z johannes $ */
+#ifdef HAVE_CONFIG_H
+#include "config.h"
+#endif
+
+#include "php.h"
+#include "php_ini.h"
+#include "ext/standard/info.h"
 
 #ifndef PHP_KINGNETPAYROUTE_H
 #define PHP_KINGNETPAYROUTE_H
@@ -76,6 +83,57 @@ ZEND_END_MODULE_GLOBALS(KingnetPayRoute)
 #endif
 
 #endif	/* PHP_KINGNETPAYROUTE_H */
+
+/* If you declare any globals in php_KingnetPayRoute.h uncomment this:
+ZEND_DECLARE_MODULE_GLOBALS(KingnetPayRoute)
+*/
+
+/* True global resources - no need for thread safety here */
+static int le_KingnetPayRoute;
+ /* 类方法的参数 */
+ZEND_BEGIN_ARG_INFO(routeName_args, 0)
+	ZEND_ARG_INFO(0, name)
+ZEND_END_ARG_INFO()
+/* {{{ KingnetPayRoute_functions[]
+ *
+ * Every user visible function must have an entry in KingnetPayRoute_functions[].
+ */
+const zend_function_entry KingnetPayRoute_functions[] = {
+	{NULL, NULL, NULL}	/* Must be the last line in KingnetPayRoute_functions[] */
+};
+const zend_function_entry route_functions[] = {
+	PHP_ME(KingnetPayRoute, __construct, NULL, ZEND_ACC_PUBLIC|ZEND_ACC_CTOR)
+	PHP_ME(KingnetPayRoute, __destruct,  NULL, ZEND_ACC_PUBLIC|ZEND_ACC_DTOR)
+	PHP_ME(KingnetPayRoute, getRoute,  routeName_args, ZEND_ACC_PUBLIC)// get route info
+	PHP_ME(KingnetPayRoute, addRoute,  routeName_args, ZEND_ACC_PUBLIC)// add route info
+	PHP_ME(KingnetPayRoute, getRouteMap,  NULL, ZEND_ACC_PUBLIC)// get route map = get all route info
+	{NULL, NULL, NULL}	/* Must be the last line in KingnetPayRoute_functions[] */
+};
+/* }}} */
+
+/* {{{ KingnetPayRoute_module_entry
+ */
+zend_module_entry KingnetPayRoute_module_entry = {
+#if ZEND_MODULE_API_NO >= 20010901
+	STANDARD_MODULE_HEADER,
+#endif
+	"KingnetPayRoute",
+	KingnetPayRoute_functions,
+	PHP_MINIT(KingnetPayRoute),
+	PHP_MSHUTDOWN(KingnetPayRoute),
+	PHP_RINIT(KingnetPayRoute),		/* Replace with NULL if there's nothing to do at request start */
+	PHP_RSHUTDOWN(KingnetPayRoute),	/* Replace with NULL if there's nothing to do at request end */
+	PHP_MINFO(KingnetPayRoute),
+#if ZEND_MODULE_API_NO >= 20010901
+	"0.1", /* Replace with version number for your extension */
+#endif
+	STANDARD_MODULE_PROPERTIES
+};
+/* }}} */
+
+#ifdef COMPILE_DL_KINGNETPAYROUTE
+ZEND_GET_MODULE(KingnetPayRoute)
+#endif
 
 
 /*
