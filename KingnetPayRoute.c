@@ -195,42 +195,51 @@ PHP_METHOD(KingnetPayRoute,getRoute) {
 	RETURN_TRUE;
 }
 PHP_METHOD(KingnetPayRoute,addRoute) {
-	zval *self,*route_info,*route_map,**pdata;
+	zval *self,*route_info,*route_map;
 	int count,i;
 	if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "a", &route_info) == FAILURE) {
 		RETURN_NULL();
 	}
 	// 获取数组大小
-    count = zend_hash_num_elements(Z_ARRVAL_P(route_info));
+	count = zend_hash_num_elements(Z_ARRVAL_P(route_info));
     // 将数组的内部指针指向第一个单元
-    zend_hash_internal_pointer_reset(Z_ARRVAL_P(route_info));
+	zend_hash_internal_pointer_reset(Z_ARRVAL_P(route_info));
 
 	self = getThis();
 	route_map = zend_read_property(Z_OBJCE_P(self), self, ZEND_STRL("route_map"), 0 TSRMLS_CC);
 
+	/*zend_hash_merge(Z_ARRVAL_P(route_map),Z_ARRVAL_P(route_info),zval_add_ref,NULL,sizeof(zval*),1);*/
 	for (i = 0; i < count; i ++) {
 		char *key;
 		uint key_len;
 		ulong idx;
+		zval **pdata,*varcopy;
 		// 获取当前数据
 		zend_hash_get_current_data(Z_ARRVAL_P(route_info), (void**)&pdata);
-		convert_to_string_ex(pdata);
+
+		/* 否则，复制一份zval*的值 */
+		MAKE_STD_ZVAL(varcopy);
+		varcopy = *pdata;
+		/* Duplicate any allocated structures within the zval* */
+		zval_copy_ctor(varcopy);
+
 		if (zend_hash_get_current_key(Z_ARRVAL_P(route_info), &key, &idx, 0) == HASH_KEY_IS_STRING) {
 			// KEY为字符串
-			if (zend_hash_add(Z_ARRVAL_P(route_map),key,sizeof(key),Z_STRVAL_PP(pdata),sizeof(zval*),NULL)
-				== SUCCESS) {
+			if (zend_hash_add(Z_ARRVAL_P(route_map),key,strlen(key)+1,&varcopy,sizeof(zval*),NULL) == SUCCESS) {
+				/*php_printf("ok");*/
 			}
 		} else {
 			// KEY为数字
 			php_printf("array[%ld] = %s|%s\n", idx, Z_STRVAL_PP(pdata),key);
-			/*if (zend_hash_add(Z_ARRVAL_P(route_map),key,key_len,Z_STRVAL_PP(pdata),sizeof(zval*),NULL)*/
-				/*== SUCCESS) {*/
-			/*}*/
+			if (zend_hash_index_update(Z_ARRVAL_P(route_map),idx,&varcopy,sizeof(zval*),NULL) == SUCCESS) {
+				/*php_printf("ok num");*/
+			}
 		}
 		// 将数组中的内部指针向前移动一位
 		zend_hash_move_forward(Z_ARRVAL_P(route_info));
 	}
-	RETURN_TRUE;
+	zend_update_property(Z_OBJCE_P(self), self, ZEND_STRL("route_map"), route_map TSRMLS_CC);
+	RETURN_ZVAL(route_map,1,0);
 }
 PHP_METHOD(KingnetPayRoute,getRouteMap) {
 	zval *self,*route_map;
